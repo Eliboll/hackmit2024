@@ -1,8 +1,19 @@
 from flask import Flask, jsonify, request, Response
 
+import logging
 import datetime
 
 app = Flask(__name__)
+
+class logger_class:
+    def __init__(self, filename):
+        self.filename = filename
+    def print_log(self,message):
+        print(message)
+        with open(self.filename, "a") as fp:
+            fp.write(message+"\n")
+
+logger = logger_class("output.log")
 
 @app.route("/log", methods=['GET'])
 def log_heartbeat():
@@ -25,11 +36,11 @@ def log_heartbeat():
         ######################################################################
         #   Made it past data validation
         ######################################################################
-        
-        print(f"{datetime.datetime.now().strftime('%H:%M:%S')} | id={id:05d} |lat={lat:3.8f}, lon={lon:3.8f}, rate={rate:03d}")
-        
+        temp_string = f"{datetime.datetime.now().strftime('%H:%M:%S')} | id={id:05d} |lat={lat:3.8f}, lon={lon:3.8f}, rate={rate:03d}"
+        logger.print_log(temp_string)
         if rate < 30:
-            print("\tCRITICAL HEART RATE DETECTED")
+            temp_string = "\tCRITICAL HEART RATE DETECTED"
+            logger.print_log(temp_string)
             return Response("{'success': 'CRITICAL CONDITION DETECTED, SENDING HELP'}", status=200)
         return Response("{'success': 'logged'}", status=200)         
         
@@ -40,6 +51,7 @@ def log_heartbeat():
 def home():
     return "Hello world!"
 
+
 if __name__ == '__main__':
-    app.run(debug=True, host="0.0.0.0")
     
+    app.run(host="0.0.0.0")
