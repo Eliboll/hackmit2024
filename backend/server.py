@@ -13,26 +13,27 @@ class logger_class:
 
 logger = logger_class("output.log")
 
-def udp_handler(self):
+def udp_handler(self,sender,b):
+    print(self[0].decode("utf-8"))
     try:
-        msgRecvd = self.rfile.readline().strip()
+        msgRecvd = self[0].decode("utf-8")
         data = json.loads(msgRecvd)
     except json.decoder.JSONDecodeError:
-        logger.print_log(f"{datetime.datetime.now().strftime('%H:%M:%S')}| ERROR; Packet from {self.client_address[0]} unreadable")
+        logger.print_log(f"{datetime.datetime.now().strftime('%H:%M:%S')}| ERROR; Packet from {sender[0]} unreadable")
 
     lat  = data.get("lat")
     lon  = data.get("lon")
     id   = data.get("id")
     rate = data.get("rate")
     if None in (lat, lon, rate, id):
-        logger.print_log(f"{datetime.datetime.now().strftime('%H:%M:%S')}| ERROR; Packet from {self.client_address[0]} does not contain all params")
+        logger.print_log(f"{datetime.datetime.now().strftime('%H:%M:%S')}| ERROR; Packet from {sender[0]} does not contain all params")
     try:
         lat  = float(lat)
         lon  = float(lon)
         id   = int(id)
         rate = int(rate)
     except ValueError:
-        logger.print_log(f"{datetime.datetime.now().strftime('%H:%M:%S')}| ERROR; Packet from {self.client_address[0]} was not formatted properly")
+        logger.print_log(f"{datetime.datetime.now().strftime('%H:%M:%S')}| ERROR; Packet from {sender[0]} was not formatted properly")
         
     ######################################################################
     #   Made it past data validation
