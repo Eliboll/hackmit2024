@@ -2,6 +2,8 @@ import serial
 import io
 
 ser = serial.Serial(port='/dev/ttyUSB0', baudrate=115200, timeout=1)
+lat = 0
+lon = 0
 # ser = serial.serial_for_url('/dev/ttyUSB0', 115200, timeout=1)
 # sio = io.TextIOWrapper(io.BufferedRWPair(ser, ser))
 
@@ -38,11 +40,17 @@ def connect_murata():
     ensure_send_command('AT+COPS?')
 
 def ensure_send_command(command, confirm = "OK"):
+    global lat,lon
     ret = ""
     while(len(ret) == 0 or ret[0] != command):
         ret = send_command(command)
     while(len(ret)==0 or ret[-1][:len(confirm)] != confirm):
         ret = read_response()
+        if "IGNSSEVU" in ret:
+            chopped = ret.split(",")
+            lat = float(chopped[4]) 
+            lon = float(chopped[5])
+            
 
 def send_command(command):
     global ser, sio
