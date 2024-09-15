@@ -40,17 +40,22 @@ def connect_murata():
     ensure_send_command('AT+COPS?')
 
 def ensure_send_command(command, confirm = "OK"):
-    global lat,lon
     ret = ""
     while(len(ret) == 0 or ret[0] != command):
         ret = send_command(command)
     while(len(ret)==0 or ret[-1][:len(confirm)] != confirm):
         ret = read_response()
-        if "IGNSSEVU" in ret:
-            chopped = ret.split(",")
-            lat = float(chopped[4]) 
-            lon = float(chopped[5])
+        parse_gps(ret)
             
+def parse_gps(ret):
+    global lat,lon
+    it = 0
+    while(it < len(ret)-1 and (len(ret[it]) < len("%IGNSSEVU") or ret[it][:len("%IGNSSEVU")] != "%IGNSSEVU")):
+        it += 1
+    if ret[it][:len("%IGNSSEVU")] == "%IGNSSEVU":
+        chopped = ret[it].split(",")
+        lat = float(chopped[4].replace('"',''))
+        lon = float(chopped[5].replace('"',''))
 
 def send_command(command):
     global ser, sio
@@ -75,6 +80,8 @@ def standby():
     while True:
         read_response()
 
+parse_gps(['', '%IGNSSEVU: "FIX",1,"04:02:56","15/09/2024","42.357978","-71.095933","39.7",1726372976000,,,"B",3'])
+print(lat, lon)
 connect_murata()
 standby()
 # while(True):
