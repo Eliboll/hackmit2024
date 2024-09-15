@@ -17,6 +17,7 @@ def udp_handler(self,sender,b):
     print(self[0].decode("utf-8"))
     try:
         msgRecvd = self[0].decode("utf-8")
+        msgRecvd = msgRecvd.replace("'",'"')
         data = json.loads(msgRecvd)
     except json.decoder.JSONDecodeError:
         logger.print_log(f"{datetime.datetime.now().strftime('%H:%M:%S')}| ERROR; Packet from {sender[0]} unreadable")
