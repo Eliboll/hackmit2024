@@ -3,6 +3,8 @@ import io
 import time
 
 ser = serial.Serial(port='/dev/ttyUSB0', baudrate=115200, timeout=1)
+arduino_ser = serial.Serial(port='/dev/ttyACM2', baudrate=115200, timeout=1)
+
 lat = 42.357978
 lon = -71.095933
 pulse_rate = 70
@@ -46,6 +48,22 @@ def connect_murata(satellite = False):
         return False
     return True
     # ensure_send_command('AT+COPS?')
+
+def connect_arduino():
+    global arduino_ser
+    while not arduino_ser.is_open:
+        arduino_ser.open()
+    print("ARDUINO PORT OPEN")
+
+def get_pulse():
+    global arduino_ser, pulse_rate
+    arduino_ser.reset_input_buffer()
+    arduino_ret = ''
+    while(len(arduino_ret) == 0):
+        arduino_ret = arduino_ser.readline().decode().rstrip()
+        # print(arduino_ret)
+    pulse_rate = float(arduino_ret)
+    print("pulse rate:", pulse_rate)
 
 def ensure_send_command(command, confirm = "OK"):
     start = time.time()
@@ -126,11 +144,11 @@ def main():
         
     while(True):
         # Record Arduino pulse rate data via Serial
-
+        get_pulse()
         if not (get_gps_send_packet('{"lat": '+str(lat)+', "lon": '+str(lon)+', "rate": '+str(pulse_rate)+', "id": 5}')):
             connect_murata(satellite=toggle)
             toggle = not toggle
-        time.sleep(5)
+        # time.sleep(5)
     
     
 if __name__ == "__main__":
