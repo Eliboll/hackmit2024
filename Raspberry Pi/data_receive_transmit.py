@@ -42,19 +42,34 @@ def connect_murata(satellite = False):
     ensure_send_command('AT+CEREG=2')
     if(satellite):
         ensure_send_command('AT%IGNSSACT=1', '%IGNSSEVU')
-    ensure_send_command('AT+CFUN=1', '+CEREG: 5') # reenable radio
+    if (ensure_send_command('AT+CFUN=1', '+CEREG: 5')): # reenable radio
+        return False
+    return True
     # ensure_send_command('AT+COPS?')
 
 def ensure_send_command(command, confirm = "OK"):
+    start = time.time()
+    counter_send = 0
+    counter_recieve = 0
     ret = ""
-    while(len(ret) == 0 or ("ERROR" in ret)):
+    while((len(ret) == 0 or ("ERROR" in ret)) and counter_send < 5):
+        if len(ret) > 0:
+            counter_send +=1
         ret = send_command(command)
         # if(check_gps):
         #     parse_gps(ret)
-    while(len(ret)==0 or ret[-1][:len(confirm)] != confirm):
+    while((len(ret)==0 or ret[-1][:len(confirm)] != confirm) and counter_recieve < 5):
+        if len(ret) > 0:
+            counter_recieve +=1
         ret = pull_responses()
+        now = time.time()
+        if (now -start > 180):
+            counter_recieve =5
+            break
         # if(check_gps):
         #     parse_gps(ret)
+    return counter_send==5 or counter_recieve ==5
+    
             
 def parse_gps(ret):
     global lat,lon
@@ -81,8 +96,11 @@ def get_gps_send_packet(packet):
     ensure_send_command('AT%SOCKETCMD="ALLOCATE",1,"UDP","OPEN","172.104.219.246",5000,0')
     ensure_send_command('AT%SOCKETCMD="SETOPT",1,36000,1')
     ensure_send_command('AT%SOCKETCMD="ACTIVATE",1')
-    ensure_send_command('AT%SOCKETDATA="SEND",1,'+str(len(packet))+',"'+packet.encode().hex()+'"')
+    if (ensure_send_command('AT%SOCKETDATA="SEND",1,'+str(len(packet))+',"'+packet.encode().hex()+'"')):
+        ensure_send_command('AT%SOCKETCMD="DELETE",1')
+        return False
     ensure_send_command('AT%SOCKETCMD="DELETE",1')
+    return True
 
 def pull_responses():
     global ser, sio
@@ -99,9 +117,21 @@ def standby():
     while True:
         pull_responses()
 
-connect_murata(satellite=False)
-while(True):
-    # Record Arduino pulse rate data via Serial
     
-    get_gps_send_packet('{"lat": '+str(lat)+', "lon": '+str(lon)+', "rate": '+str(pulse_rate)+', "id": 5}')
-    time.sleep(2)
+def main():
+    toggle = True
+    if not connect_murata(satellite=False):
+        toggle = False
+        connect_murata(satellite=True)
+        
+    while(True):
+        # Record Arduino pulse rate data via Serial
+
+        if not (get_gps_send_packet('{"lat": '+str(lat)+', "lon": '+str(lon)+', "rate": '+str(pulse_rate)+', "id": 5}')):
+            connect_murata(satellite=toggle)
+            toggle = not toggle
+        time.sleep(5)
+    
+    
+if __name__ == "__main__":
+    main()
