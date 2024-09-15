@@ -1,3 +1,4 @@
+
 #include <arduinoFFT.h>
 const double samplingFrequency = 50;
 const uint16_t samples = 128;
@@ -58,8 +59,8 @@ void loop()
 
   max_elem = 0;
   max_index = 0;
-  //Start from 1.5% and end at 98.5% to neglect the 0th, 1st, and sample-1 frequencies 
-  for (int i = ceil(0.015*samples); i<floor(0.985*samples); i++){
+  //Start from 2% and end at 98% to neglect the 0th, 1st, and sample-1 frequencies 
+  for (int i = ceil(0.02*samples); i<floor(0.98*samples); i++){
   //finding the max amplitude
   if (vReal[i]>max_elem){
     max_elem = vReal[i];
